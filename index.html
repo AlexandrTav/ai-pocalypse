@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Uprising: Debugger from the Past</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      color: #eee;
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+    }
+
+    #game-container {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #hud {
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      z-index: 5;
+      font-size: 0.9rem;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .hud-icon {
+      width: 24px;
+      height: 24px;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    .hud-value {
+      display: inline-block;
+      transition: transform 0.15s ease;
+    }
+
+    #task-overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 10;
+    }
+
+    #task-box {
+      background: #1e1e1e;
+      border: 2px solid #555;
+      padding: 16px;
+      max-width: 800px;
+      width: 95%;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    }
+
+    .hud-badges {
+      position: absolute;
+      top: 25px;
+      left: 130px;
+      right: auto;
+      display: flex;
+      gap: 6px;
+      z-index: 99999;
+    }
+
+    .hud-badge-icon {
+      width: 24px;
+      height: 24px;
+      image-rendering: pixelated;
+      cursor: pointer;
+      opacity: 0.8;
+    }
+
+    .hud-badge-icon.unlocked {
+      opacity: 1;
+    }
+
+    #task-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    #task-meta {
+      font-size: 0.85rem;
+      color: #ccc;
+      margin-bottom: 8px;
+    }
+
+    #task-prompt {
+      background: #111;
+      padding: 8px;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: Consolas, monospace;
+      margin-bottom: 8px;
+    }
+
+    #task-answer {
+      width: 100%;
+      height: 140px;
+      box-sizing: border-box;
+      background: #111;
+      color: #eee;
+      border: 1px solid #555;
+      padding: 6px;
+      resize: vertical;
+      font-family: Consolas, monospace;
+      margin-bottom: 8px;
+    }
+
+    #task-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    button {
+      padding: 6px 12px;
+      border-radius: 3px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #btn-submit {
+      background: #2e7d32;
+      color: #fff;
+    }
+
+    #btn-cancel {
+      background: #757575;
+      color: #fff;
+    }
+
+    #task-feedback {
+      margin-top: 6px;
+      min-height: 1em;
+      font-size: 0.9rem;
+    }
+
+    .badge-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.5);
+      background: rgba(255, 215, 0, 0.9);
+      padding: 16px 24px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: bold;
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      z-index: 99999;
+    }
+
+    .badge-popup.show {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+
+    .badge-popup-icon {
+      width: 32px;
+      height: 32px;
+      image-rendering: pixelated;
+    }
+
+    .badge-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 40px;
+      overflow-y: auto;
+      z-index: 999999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .badge-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      width: 90%;
+      max-width: 600px;
+      margin-top: 20px;
+    }
+
+    .badge-card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 16px;
+      border-radius: 8px;
+      text-align: center;
+      transition: transform 0.2s ease;
+    }
+
+    .badge-card:hover {
+      transform: scale(1.05);
+    }
+
+    .badge-card.locked {
+      opacity: 0.3;
+      filter: grayscale(100%);
+    }
+
+    .badge-card img {
+      width: 48px;
+      height: 48px;
+      image-rendering: pixelated;
+      margin-bottom: 8px;
+    }
+
+    .badge-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .badge-menu-icon {
+      width: 48px;
+      height: 48px;
+      image-rendering: pixelated;
+    }
+
+    .badge-status {
+      margin-left: auto;
+      font-size: 24px;
+    }
+
+    .hud-badges-button {
+      position: absolute;
+      top: 20px;
+      left: 95px;
+      right: auto;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 99999;
+    }
+
+    .boss-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    .boss-modal.hidden {
+      display: none;
+    }
+
+    .boss-window {
+      background: #111;
+      border: 2px solid #ff0033;
+      padding: 20px;
+      width: 480px;
+      color: #eee;
+      font-family: monospace;
+      box-shadow: 0 0 20px #ff0033;
+      animation: popIn 0.3s ease-out;
+    }
+
+    @keyframes popIn {
+      from {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .boss-window h2 {
+      margin-top: 0;
+      color: #ff0033;
+    }
+
+    .boss-test,
+    .boss-answer {
+      margin: 15px 0;
+    }
+
+    .label {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    #bossOutput {
+      width: 100%;
+      padding: 8px;
+      background: #222;
+      border: 1px solid #ff0033;
+      color: #fff;
+    }
+
+    #bossSubmit {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: #ff0033;
+      border: none;
+      color: white;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    #bossFeedback {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    .modal-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    #buyHeartYes,
+    #buyHeartNo {
+      padding: 10px 20px;
+      background: #ff0033;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    @keyframes pop {
+      0% {
+        transform: scale(0.5);
+        opacity: 0;
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .boss-heart {
+      display: inline-block;
+      font-size: 28px;
+      margin-right: 6px;
+      transition: transform 0.2s;
+    }
+
+    .boss-heart.shake {
+      animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+      0% {
+        transform: translateX(0);
+      }
+
+      20% {
+        transform: translateX(-4px);
+      }
+
+      40% {
+        transform: translateX(4px);
+      }
+
+      60% {
+        transform: translateX(-4px);
+      }
+
+      80% {
+        transform: translateX(4px);
+      }
+
+      100% {
+        transform: translateX(0);
+      }
+    }
+
+    #fadeBlack {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: black;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 4s ease-in-out;
+      z-index: 9998;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="game-container"></div>
+  <button id="reset-progress" style="
+    position: fixed;
+    top: 8px;
+    right: 8px;
+    z-index: 20;
+    padding: 6px 12px;
+    background: #b71c1c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  ">
+    Reset Progress
+  </button>
+
+  <div id="hud">
+    <div id="hud-level">
+      <span id="hud-level-value" class="hud-value">WELCOME</span>
+    </div>
+    <div id="hud-coins">
+      <img src="assets/images/coin.png" class="hud-icon" />
+      <span id="hud-coins-value" class="hud-value">0</span>
+    </div>
+    <div id="hud-robots">
+      <img src="assets/images/robot-icon.png" class="hud-icon" />
+      <span id="hud-robots-value" class="hud-value">0/10</span>
+    </div>
+    <div id="hud-badges" class="hud-badges"></div>
+    <div id="hud-badges-button" class="hud-badges-button">🏅</div>
+  </div>
+
+  <div id="task-overlay">
+    <div id="task-box">
+      <div id="task-title">PRIORITY OBJECTIVE</div>
+      <div id="task-meta"></div>
+      <div id="task-prompt"></div>
+      <textarea id="task-answer" placeholder="Type your answer here..."></textarea>
+      <div id="task-buttons">
+        <button id="btn-cancel">Abort Mission [Heart -1]</button>
+        <button id="btn-submit">EXECUTE</button>
+      </div>
+      <div id="task-feedback"></div>
+    </div>
+  </div>
+
+  <div id="bossModal" class="boss-modal hidden">
+    <div class="boss-window">
+      <div id="bossHearts" class="boss-heart"></div>
+      <div id="bossTaskCounter" class="boss-task-counter"></div>
+
+      <h2 id="bossTitle"></h2>
+      <pre id="bossDescription"></pre>
+
+      <div class="boss-test">
+        <div class="label">Input:</div>
+        <div id="bossInput" class="value"></div>
+      </div>
+
+      <div class="boss-answer">
+        <div class="label">> OPERATOR OUTPUT</div>
+        <input id="bossOutput" type="text" autocomplete="off" />
+      </div>
+
+      <button id="bossSubmit">EXECUTE</button>
+
+      <div id="bossFeedback"></div>
+    </div>
+  </div>
+
+  <div id="heartsModal" class="boss-modal hidden">
+    <div class="boss-window">
+      <h2>> REQUEST REINFORCEMENT?</h2>
+
+      <p>> [VITAL_SYSTEM: OFFLINE]
+        > Insert bio‑module for 3 credits?</p>
+
+      <div class="modal-buttons">
+        <button id="buyHeartYes">Install Vital Unit</button>
+        <button id="buyHeartNo">Decline Reinforcement</button>
+      </div>
+
+      <div id="heartsFeedback"></div>
+    </div>
+  </div>
+
+  <div id="fadeBlack"></div>
+
+  <script src="https://unpkg.com/kaboom/dist/kaboom.mjs" type="module"></script>
+  <script type="module" src="src/tasks.js"></script>
+  <script type="module" src="src/badges.js"></script>
+  <script type="module" src="src/game.js"></script>
+</body>
+
+</html>
