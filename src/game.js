@@ -344,7 +344,7 @@ document.getElementById("buyHeartYes").onclick = () => {
     cost -= spendFromPermanent;
 
     saveState.coins = coinsPermanent;
-    
+
     // update stats
     stats.coinsSpent += HEART_COST;
     saveStats();
@@ -954,7 +954,7 @@ scene("runner", () => {
             saveState.bestEndlessScore = robotsPassed;
             stats.bestEndlessScore = saveState.bestEndlessScore;
 
-            saveStats();            
+            saveStats();
             saveGame();
           }
           go("endless_failed");
@@ -1191,15 +1191,19 @@ scene("boss_defeated", (levelJustBeaten) => {
   add([
     text(
       isMaxLevel
-        ? `> HUMANITY PREVAILS  
-> All battlefronts secured.  
-> Endless Mode: ACTIVATED`
+        ? `> -╗- SY▒TEM └CRASHED▓│┤
+> AI Status: OFFLINE ...
+> Humanity: PREVAILS ...
+> Let's sweep the rest of this trash into the furnace
+      
+        [START ENDLESS SCRAP-COLLECTION]
+`
         : `> [CORE NODE ███ OFFLINE]  
 > AI integrity dropping…  
 > click to advance
 `,
       {
-        size: 32,
+        size: 30,
         width: 700,
         color: rgb(200, 255, 200)
       }
@@ -1210,14 +1214,14 @@ scene("boss_defeated", (levelJustBeaten) => {
 
   // --- FINAL BOSS EFFECTS ---
   if (isMaxLevel) {
-    if (bgMusic) { 
+    if (bgMusic) {
       bgMusic.stop();
       bgMusic = null;
     }
 
     const bossSprite = add([
       sprite("boss"),
-      pos(width()/2, height()/2),
+      pos(width() / 2, height() / 2),
       anchor("center"),
       scale(0.3),
       fixed(),
@@ -1227,7 +1231,7 @@ scene("boss_defeated", (levelJustBeaten) => {
     let shakeTimer = 0;
     bossSprite.onUpdate(() => {
       shakeTimer += dt();
-      const intensity = 8; // adjust shake strength
+      const intensity = 7; // adjust shake strength
       bossSprite.pos.x += rand(-intensity, intensity);
       bossSprite.pos.y += rand(-intensity, intensity);
     });
@@ -1237,23 +1241,22 @@ scene("boss_defeated", (levelJustBeaten) => {
     const fade = document.getElementById("fadeBlack");
     fade.style.opacity = "1";
 
-    wait(4, () => {
-      explosionLoop.stop();
+    wait(5, () => {
       fade.style.opacity = "0";
+      onClick(() => {
+        stats.endlessUnlocked = true;
+        stats.endlessModeActive = true;
+        saveStats();
+        refreshHUD();
+        explosionLoop.stop();
+        go("runner");
+        return;
+      });
     });
   }
 
   wait(3, () => {
     onClick(() => {
-      if (levelJustBeaten >= 10) {
-        stats.endlessUnlocked = true;
-        stats.endlessModeActive = true;
-        saveStats();
-        refreshHUD();
-        go("runner");
-        return;
-      }
-
       saveStats();
       go("runner");
     });
