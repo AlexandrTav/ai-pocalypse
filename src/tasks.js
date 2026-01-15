@@ -739,7 +739,7 @@ mode | A | B
 
 Output: sums separated by spaces.
 
-Example: 2 | 3 2 1 | 1 2 3 -> 9 4 2
+Example: 2 | 3 2 1 | 1 2 3 -> 6 4 2
   `,
     tests: [
       { input: "1 | 1 2 3 | 4 5 6", expected: "5 7 9" },
