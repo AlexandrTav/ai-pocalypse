@@ -761,7 +761,7 @@ Output:
 vowels: WORD consonants: WORD
   `,
     tests: [
-      { input: "cat tree audio", expected: "vowels: audio consonants: tree" },
+      { input: "cat tree audio", expected: "vowels: audio consonants: cat" },
       { input: "sky rhythm why", expected: "vowels: sky consonants: rhythm" }
     ]
   },
